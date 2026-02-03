@@ -9,50 +9,68 @@ import (
 )
 
 type User struct {
-	Name string `validate:"min=3,max=32"`
+	Name string `Validate:"min=3,max=32"`
 
 	// FIXME: I don't personally like email validation by some regex...
 	//
 	// Not only its a bad thing, but it can also break my whole system
 	// with a big enough regex! So I'm not gonna use it here.
-	Email string `validate:"required"`
+	Email string `Validate:"required"`
 }
 
-func validate(value any) error {
+func Validate(value any) error {
 	val := reflect.ValueOf(value)
 	if val.Kind() != reflect.Struct {
 		return errors.New("This is not a struct anymore buddy!!!")
 	}
 
+	var errs error
+
 	for i := range val.NumField() {
-		field := val.Field(i)
-		tag := val.Type().Field(i).Tag.Get("validate")
+		tag := val.Type().Field(i).Tag.Get("Validate")
 		if tag == "" {
 			continue
 		}
 
 		rules := strings.Split(tag, ",")
 		for _, rule := range rules {
-			name := val.Type().Field(i).Name
-
-			switch {
-			case rule == "required":
-				if field.IsZero() {
-					return fmt.Errorf("%s is required", name)
-				}
-			case strings.HasPrefix(rule, "min="):
-				min, _ := strconv.Atoi(strings.TrimPrefix(rule, "min="))
-
-				if field.IsZero() || len(field.String()) < min {
-					return fmt.Errorf("%s must have a length of at least %d", name, min)
-				}
-			case strings.HasPrefix(rule, "max="):
-				max, _ := strconv.Atoi(strings.TrimPrefix(rule, "max="))
-
-				if field.IsZero() || len(field.String()) > max {
-					return fmt.Errorf("%s must have a maximum length of %d", name, max)
-				}
+			if err := checkRules(&val, i, rule); err != nil {
+				errs = errors.Join(errs, err)
 			}
+		}
+	}
+
+	return errs
+}
+
+func checkRules(value *reflect.Value, index int, rule string) error {
+	field := value.Field(index)
+	name := value.Type().Field(index).Name
+
+	switch {
+	case rule == "required":
+		if field.IsZero() {
+			return fmt.Errorf("%s is required", name)
+		}
+
+	case strings.HasPrefix(rule, "min="):
+		min, err := strconv.Atoi(strings.TrimPrefix(rule, "min="))
+		if err != nil {
+			return fmt.Errorf("invalid min value for %s: %v", name, err)
+		}
+
+		if len(field.String()) < min {
+			return fmt.Errorf("%s must have a length of at least %d", name, min)
+		}
+
+	case strings.HasPrefix(rule, "max="):
+		max, err := strconv.Atoi(strings.TrimPrefix(rule, "max="))
+		if err != nil {
+			return fmt.Errorf("invalid max value for %s: %v", name, err)
+		}
+
+		if len(field.String()) > max {
+			return fmt.Errorf("%s must have a maximum length of %d", name, max)
 		}
 	}
 	return nil
@@ -74,22 +92,35 @@ func main() {
 		Email: "",
 	}
 
+	reallyBadUser := User{
+		Name:  "a",
+		Email: "",
+	}
+
 	validUser := User{
 		Name:  "rafael",
 		Email: "test@example.com",
 	}
 
-	if err := validate(shortName); err != nil {
+	if err := Validate(shortName); err != nil {
 		println(err.Error())
 	}
-	if err := validate(longName); err != nil {
+
+	if err := Validate(longName); err != nil {
 		println(err.Error())
 	}
-	if err := validate(badEmail); err != nil {
+
+	if err := Validate(badEmail); err != nil {
 		println(err.Error())
 	}
-	if err := validate(validUser); err != nil {
+
+	if err := Validate(reallyBadUser); err != nil {
 		println(err.Error())
 	}
-	println("No errors for valid User!")
+
+	if err := Validate(validUser); err != nil {
+		println(err.Error())
+	} else {
+		println("No errors for valid User!")
+	}
 }
