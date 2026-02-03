@@ -77,50 +77,6 @@ func checkRules(value *reflect.Value, index int, rule string) error {
 }
 
 func main() {
-	shortName := User{
-		Name:  "u",
-		Email: "test@example.com",
-	}
-
-	longName := User{
-		Name:  "I have at least 32 characters, but I'm not sure.",
-		Email: "test@example.com",
-	}
-
-	badEmail := User{
-		Name:  "rafael",
-		Email: "",
-	}
-
-	reallyBadUser := User{
-		Name:  "a",
-		Email: "",
-	}
-
-	validUser := User{
-		Name:  "rafael",
-		Email: "test@example.com",
-	}
-
-	if err := Validate(shortName); err != nil {
-		println(err.Error())
-	}
-
-	if err := Validate(longName); err != nil {
-		println(err.Error())
-	}
-
-	if err := Validate(badEmail); err != nil {
-		println(err.Error())
-	}
-
-	if err := Validate(reallyBadUser); err != nil {
-		println(err.Error())
-	}
-
-	if err := Validate(validUser); err != nil {
-		println(err.Error())
-	} else {
-		println("No errors for valid User!")
-	}
+	// NOTHING HERE... IF YOU WANT THE TEST CASES
+	// GO CHECK THE "main_test.go".
 }
